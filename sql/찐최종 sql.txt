@@ -1,0 +1,194 @@
+USE sf_solution;
+
+-- 기존 데이터베이스 초기화
+DROP DATABASE IF EXISTS sf_solution;
+CREATE DATABASE sf_solution;
+USE sf_solution;
+
+-- 1. 사용자 역할 테이블
+CREATE TABLE user_roles (
+    role_id INT PRIMARY KEY,
+    role_name VARCHAR(20) NOT NULL UNIQUE
+);
+
+-- 2. 사용자 테이블
+CREATE TABLE db_user (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    role_id INT NOT NULL DEFAULT 2,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login DATETIME,
+    is_active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (role_id) REFERENCES user_roles(role_id)
+);
+
+-- 3. 제품 정보 테이블
+CREATE TABLE dt_product (
+    product_code VARCHAR(20) PRIMARY KEY,
+    product_group VARCHAR(50) NOT NULL,
+    product_name VARCHAR(100) NOT NULL,
+    unit ENUM('BOX', 'EA', 'kg') NOT NULL,
+    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0)
+);
+
+-- 4. 수주관리 테이블
+CREATE TABLE dt_contract (
+    order_number VARCHAR(50) PRIMARY KEY,                 
+    order_date DATE NOT NULL,                             
+    company_code VARCHAR(10) NOT NULL,                   
+    company_name VARCHAR(100) NOT NULL,                  
+    product_code VARCHAR(20) NOT NULL,                   
+    quantity INT NOT NULL CHECK (quantity >= 0),         
+    delivery_date DATE NOT NULL,                         
+    remarks TEXT,                                        
+    employee_name VARCHAR(50) NOT NULL,                  
+    status VARCHAR(20) DEFAULT '대기' CHECK (            
+        status IN ('대기', '확정', '취소')               
+    ),
+    FOREIGN KEY (product_code) REFERENCES dt_product(product_code)
+);
+
+-- 5. 출하관리 테이블
+CREATE TABLE dt_shipment (
+    shipment_number VARCHAR(50) PRIMARY KEY,        
+    order_number VARCHAR(50),
+    company_code VARCHAR(10) NOT NULL,             
+    company_name VARCHAR(100) NOT NULL,            
+    product_code VARCHAR(20) NOT NULL,             
+    production_date DATE NOT NULL,                 
+    shipment_date DATE NOT NULL,                   
+    shipment_quantity INT NOT NULL CHECK (shipment_quantity >= 0), 
+    vehicle_number VARCHAR(20) NOT NULL,           
+    employee_name VARCHAR(50) NOT NULL,            
+    status VARCHAR(20) DEFAULT '대기' CHECK (status IN ('대기', '확정', '취소')), 
+    FOREIGN KEY (product_code) REFERENCES dt_product(product_code),
+    FOREIGN KEY (order_number) REFERENCES dt_contract(order_number)
+);
+
+-- 6. 생산계획 테이블
+CREATE TABLE dt_production_plan (
+    work_order_code VARCHAR(50) PRIMARY KEY,
+    order_number VARCHAR(50),
+    production_date DATE NOT NULL,
+    product_code VARCHAR(20) NOT NULL,
+    order_quantity INT NOT NULL CHECK (order_quantity >= 0),
+    production_quantity INT DEFAULT 0 CHECK (production_quantity >= 0),
+    work_order_sequence INT NOT NULL,
+    production_line ENUM('라인1', '라인2', '라인3') NOT NULL,
+    work_shift ENUM('주간1', '주간2', '야간1', '야간2') NOT NULL,
+    process_status ENUM('대기', '작업중', '일시정지', '완료','지연') DEFAULT '대기',
+    equipment_status VARCHAR(20),
+    remarks VARCHAR(200) DEFAULT NULL,
+    employee_name VARCHAR(50) NOT NULL,
+    start_time DATETIME,
+    completion_time DATETIME,
+    simulation_mode ENUM('자동', '수동') DEFAULT '수동',
+    cycle_time INT DEFAULT 3,
+    last_production_time DATETIME,
+    current_production INT DEFAULT 0,
+    FOREIGN KEY (product_code) REFERENCES dt_product(product_code),
+    FOREIGN KEY (order_number) REFERENCES dt_contract(order_number)
+);
+
+-- 7. 작업지시 테이블
+CREATE TABLE dt_production_management (
+    work_order_code VARCHAR(50) PRIMARY KEY,
+    production_date DATE NOT NULL,
+    product_code VARCHAR(20) NOT NULL,
+    order_quantity INT NOT NULL CHECK (order_quantity >= 0),
+    production_quantity INT DEFAULT 0 CHECK (production_quantity >= 0),
+    production_line ENUM('라인1', '라인2', '라인3') NOT NULL,
+    work_order_sequence INT NOT NULL,
+    work_shift ENUM('주간1', '주간2', '야간1', '야간2') NOT NULL,
+    process_status ENUM('대기', '작업중', '완료', '지연') DEFAULT '대기',
+    employee_name VARCHAR(50) NOT NULL,
+    priority_sequence INT,
+    last_status_change DATETIME,
+    minimum_status_duration INT,
+    FOREIGN KEY (product_code) REFERENCES dt_product(product_code)
+);
+
+-- 8. 설비관리 테이블
+CREATE TABLE dt_facility_management (
+    equipment_code VARCHAR(20) PRIMARY KEY,
+    production_line ENUM('라인1', '라인2', '라인3') NOT NULL,
+    equipment_company_name VARCHAR(100) NOT NULL,
+    equipment_contact_number VARCHAR(20) NOT NULL,
+    equipment_contact_person VARCHAR(50) NOT NULL,
+    inspection_date DATE NOT NULL,
+    inspection_frequency VARCHAR(10) NOT NULL,
+    temperature DECIMAL(5,2) NOT NULL CHECK (temperature BETWEEN -50 AND 100),
+    humidity DECIMAL(5,2) NOT NULL CHECK (humidity BETWEEN 0 AND 100),
+    employee_name VARCHAR(50) NOT NULL
+);
+
+-- 9. 재고관리 테이블
+CREATE TABLE dt_inventory_management (
+    inventory_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_code VARCHAR(20) NOT NULL,
+    inventory_quantity INT NOT NULL CHECK (inventory_quantity >= 0),
+    unit VARCHAR(20) NOT NULL,
+    responsible_person VARCHAR(50) NOT NULL,
+    transaction_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    transaction_type ENUM('입고', '출고', '재고조정') NOT NULL,
+    remarks TEXT NULL COMMENT '비고/조정사유',
+    FOREIGN KEY (product_code) REFERENCES dt_product(product_code)
+);
+
+-- 10. 사용자 활동 로그 테이블
+CREATE TABLE dt_user_activity_log (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action_type VARCHAR(20) NOT NULL,
+    action_detail TEXT NOT NULL,
+    action_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES db_user(user_id)
+);
+
+-- 11. 알림 테이블
+CREATE TABLE dt_notification (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    severity_level ENUM('CRITICAL', 'HIGH', 'MEDIUM', 'LOW') NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_read BOOLEAN DEFAULT FALSE,
+    target_user_id INT,
+    related_module VARCHAR(50),
+    related_id VARCHAR(50),
+    FOREIGN KEY (target_user_id) REFERENCES db_user(user_id)
+);
+
+-- 12. 알림 기록 테이블
+CREATE TABLE dt_notification_history (
+    history_id INT AUTO_INCREMENT PRIMARY KEY,
+    notification_id INT,
+    action_type ENUM('CREATE', 'READ', 'DELETE') NOT NULL,
+    action_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    action_user_id INT,
+    FOREIGN KEY (notification_id) REFERENCES dt_notification(notification_id),
+    FOREIGN KEY (action_user_id) REFERENCES db_user(user_id)
+);
+
+-- 13. 생산 기록 테이블
+CREATE TABLE dt_production_history (
+    history_id INT AUTO_INCREMENT PRIMARY KEY,
+    work_order_code VARCHAR(50) NOT NULL,
+    production_time DATETIME NOT NULL,
+    quantity INT NOT NULL,
+    FOREIGN KEY (work_order_code) REFERENCES dt_production_plan(work_order_code)
+);
+
+-- 인덱스 추가
+CREATE INDEX idx_product_group ON dt_product(product_group);
+CREATE INDEX idx_contract_company ON dt_contract(company_code, company_name);
+CREATE INDEX idx_shipment_dates ON dt_shipment(production_date, shipment_date);
+CREATE INDEX idx_production_plan_dates ON dt_production_plan(production_date);
+CREATE INDEX idx_notification_severity ON dt_notification(severity_level);
+CREATE INDEX idx_notification_created ON dt_notification(created_at);
+CREATE INDEX idx_notification_user ON dt_notification(target_user_id);
+CREATE INDEX idx_production_priority ON dt_production_management(priority_sequence);
+CREATE INDEX idx_production_history_workorder ON dt_production_history(work_order_code);
+CREATE INDEX idx_production_history_time ON dt_production_history(production_time);

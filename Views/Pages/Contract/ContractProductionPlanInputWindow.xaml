@@ -1,0 +1,169 @@
+﻿<Window x:Class="MES.Solution.Views.ContractProductionPlanInputWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="수주 생산계획 입력"
+        Width="500"
+        Height="450"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None">
+
+    <Border Margin="10"
+            Background="White"
+            CornerRadius="20">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="15"
+                              Direction="-90"
+                              Opacity="0.2"
+                              ShadowDepth="2" />
+        </Border.Effect>
+
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  제어 버튼 영역  -->
+            <Grid>
+                <TextBlock HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Text="수주 생산계획 입력" />
+                <Button x:Name="BtnClose"
+                        Width="40"
+                        Height="40"
+                        HorizontalAlignment="Right"
+                        Click="BtnClose_Click"
+                        Content="×"
+                        FontSize="20"
+                        Style="{StaticResource IconButtonStyle}" />
+            </Grid>
+
+            <!--  선택된 수주 정보 표시  -->
+            <Border Grid.Row="1"
+                    Margin="0,10,0,10"
+                    Padding="10"
+                    Background="#F5F5F5"
+                    CornerRadius="5">
+                <StackPanel>
+                    <TextBlock>
+                        <Run FontSize="13" Text="수주번호: " />
+                        <Run FontSize="13" Text="{Binding Contract.OrderNumber}" />
+                    </TextBlock>
+                    <TextBlock>
+                        <Run FontSize="13" Text="제품: " />
+                        <Run FontSize="13" Text="{Binding Contract.ProductName}" />
+                    </TextBlock>
+                    <TextBlock>
+                        <Run FontSize="13" Text="수량: " />
+                        <Run FontSize="13" Text="{Binding Contract.Quantity}" />
+                    </TextBlock>
+                    <TextBlock>
+                        <Run FontSize="13" Text="납기일: " />
+                        <Run FontSize="13" Text="{Binding Contract.DeliveryDate, StringFormat=yyyy-MM-dd}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!--  입력 폼  -->
+            <Grid Grid.Row="2" Margin="0,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!--  생산일자  -->
+                <TextBlock Grid.Row="0"
+                           Margin="0,0,10,10"
+                           VerticalAlignment="Center"
+                           FontSize="13"
+                           Text="생산일자:" />
+                <DatePicker Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="0,0,0,10"
+                            FontSize="13"
+                            SelectedDate="{Binding ProductionDate}" />
+
+                <!--  생산라인  -->
+                <TextBlock Grid.Row="1"
+                           Margin="0,0,10,10"
+                           VerticalAlignment="Center"
+                           FontSize="13"
+                           Text="생산라인:" />
+                <ComboBox Grid.Row="1"
+                          Grid.Column="1"
+                          Margin="0,0,0,10"
+                          FontSize="13"
+                          ItemsSource="{Binding ProductionLines}"
+                          SelectedItem="{Binding SelectedProductionLine}" />
+
+                <!--  작업조  -->
+                <TextBlock Grid.Row="2"
+                           Margin="0,0,10,10"
+                           VerticalAlignment="Center"
+                           FontSize="13"
+                           Text="작업조:" />
+                <ComboBox Grid.Row="2"
+                          Grid.Column="1"
+                          Margin="0,0,0,10"
+                          FontSize="13"
+                          ItemsSource="{Binding WorkShifts}"
+                          SelectedItem="{Binding SelectedWorkShift}" />
+
+                <!--  비고  -->
+                <TextBlock Grid.Row="3"
+                           Margin="0,0,10,10"
+                           VerticalAlignment="Top"
+                           FontSize="13"
+                           Text="비고:" />
+                <TextBox Grid.Row="3"
+                         Grid.Column="1"
+                         Height="60"
+                         Margin="0,0,0,10"
+                         AcceptsReturn="True"
+                         FontSize="13"
+                         Text="{Binding Remarks, UpdateSourceTrigger=PropertyChanged}"
+                         TextWrapping="Wrap" />
+
+                <!--  에러 메시지  -->
+                <TextBlock Grid.Row="4"
+                           Grid.ColumnSpan="2"
+                           FontSize="13"
+                           Foreground="Red"
+                           Text="{Binding ErrorMessage}"
+                           TextWrapping="Wrap"
+                           Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}" />
+            </Grid>
+
+            <!--  버튼 영역  -->
+            <StackPanel Grid.Row="3"
+                        Margin="0,10,0,0"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                <Button Width="100"
+                        Height="35"
+                        Margin="0,0,10,0"
+                        Command="{Binding SaveCommand}"
+                        Content="확인"
+                        Style="{StaticResource RoundedButtonStyle}" />
+                <Button Width="100"
+                        Height="35"
+                        Click="BtnClose_Click"
+                        Content="취소"
+                        Style="{StaticResource RoundedButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
